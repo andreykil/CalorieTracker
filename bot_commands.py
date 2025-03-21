@@ -31,15 +31,6 @@ async def start(message: types.Message, state: FSMContext):
 
 @router.message(Command("set_goal"))
 async def set_calorie_goal(message: types.Message, state: FSMContext):
-    db = next(get_db())
-    user_id = message.from_user.id
-
-    user = db.query(User).filter_by(telegram_id=user_id).first()
-    if not user:
-        await message.answer("Для начала работы с ботом введи /start")
-        await state.clear()
-        return
-
     await message.answer("Укажи твою цель по калориям (число):")
     await state.set_state(SetCalorieGoal.waiting_for_calorie_goal)
 
@@ -53,7 +44,7 @@ async def process_calorie_goal(message: types.Message, state: FSMContext):
 
         user = db.query(User).filter_by(telegram_id=user_id).first()
         if not user:
-            await message.answer("Для начала работы с ботом введи /start")
+            await message.answer("Ошибка: пользователь не найден")
             await state.clear()
             return
 
@@ -68,22 +59,13 @@ async def process_calorie_goal(message: types.Message, state: FSMContext):
 
 @router.message(Command("add_global"))
 async def add_global_product(message: types.Message, state: FSMContext):
-    db = next(get_db())
-    user_id = message.from_user.id
-
-    user = db.query(User).filter_by(telegram_id=user_id).first()
-    if not user:
-        await message.answer("Для начала работы с ботом введи /start")
-        await state.clear()
-        return
-
     await message.answer("Введите часть названия продукта:")
     await state.set_state(AddGlobalProduct.waiting_for_search)
 
 
 @router.message(AddGlobalProduct.waiting_for_search)
 async def search_global_product(message: types.Message, state: FSMContext):
-    search_query = message.text.strip().lower()
+    search_query = (message.text.strip().lower())
 
     if not search_query:
         await message.answer("Ошибка: введите часть названия продукта.")
@@ -104,11 +86,6 @@ async def search_global_product(message: types.Message, state: FSMContext):
         [types.InlineKeyboardButton(text=products[i].name, callback_data=f"global_product_{products[i].id}")]
         for i in range(0, len(products), 2)
     ])
-
-    # keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-    #     [types.InlineKeyboardButton(text=product.name, callback_data=f"global_product_{product.id}")]
-    #     for product in products
-    # ])
 
     await message.answer("Найдены следующие продукты:", reply_markup=keyboard)
     await state.clear()
@@ -160,7 +137,7 @@ async def process_quantity(message: types.Message, state: FSMContext):
         db.commit()
 
         total_calories = (product.calories * quantity) / 100
-        await message.answer(f"Добавлено {quantity} граммов {product.name}. Калорий: {total_calories:.1f} ккал.")
+        await message.answer(f"Добавлено {quantity} граммов {product.name}. Калорий: {total_calories:.0f} ккал.")
 
     except ValueError:
         await message.answer("Пожалуйста, введи корректное число.")
