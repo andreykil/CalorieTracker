@@ -45,18 +45,18 @@ class FavoriteProduct(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     quantity = Column(Integer, nullable=False)
     product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
-    custom_name = Column(String, nullable=False)
-    calories = Column(Integer, nullable=True)
-    proteins = Column(Integer, nullable=True)
-    fats = Column(Integer, nullable=True)
-    carbs = Column(Integer, nullable=True)
+    name = Column(String, nullable=False)
+    calories = Column(Integer, nullable=False)
+    proteins = Column(Integer, nullable=False)
+    fats = Column(Integer, nullable=False)
+    carbs = Column(Integer, nullable=False)
 
     user = relationship("User", back_populates="favorites")
     global_product = relationship("GlobalProduct", back_populates="favorite_products")
     entries = relationship("CalorieEntry", back_populates="favorite_product")
 
     def __repr__(self):
-        return f"<FavoriteProduct(user_id={self.user_id}, name={self.custom_name or self.global_product.name})>"
+        return f"<FavoriteProduct(user_id={self.user_id}, name={self.name or self.global_product.name})>"
 
 class CalorieEntry(Base):
     __tablename__ = 'calorie_entries'

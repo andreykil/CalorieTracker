@@ -9,7 +9,7 @@ from states import SearchGlobalProduct
 router = Router()
 
 @router.message(lambda message: message.text == "Найти базовое блюдо")
-async def handle_add_global_button(message: types.Message, state: FSMContext):
+async def handle_search_global_button(message: types.Message, state: FSMContext):
     await start_search_global_product(message, state)
 
 @router.message(Command("search_global"))
@@ -59,7 +59,7 @@ async def process_global_product(callback_query: types.CallbackQuery, state: FSM
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
          types.InlineKeyboardButton(text="Добавить", callback_data=f"add_global_product"),
          types.InlineKeyboardButton(text="В избранные", callback_data=f"global_to_favorite"),
-         types.InlineKeyboardButton(text="Информация", callback_data=f"global_info"),
+         types.InlineKeyboardButton(text="Информация", callback_data=f"info_global"),
     ]])
 
     await callback_query.message.answer(f"Вы выбрали: {product.name}", reply_markup = keyboard)
@@ -156,21 +156,25 @@ async def to_favorite(message: types.Message, state: FSMContext):
         user_id=user.id,
         product_id=product.id,
         quantity=quantity,
-        custom_name=name,
+        name=name,
+        calories=product.calories,
+        proteins=product.proteins,
+        fats=product.fats,
+        carbs=product.carbs
     )
     db.add(new_favorite)
     db.commit()
 
     await message.answer(
         f"Cоздано избранное блюдо {name}, {quantity} граммов\n"
-        f"Калорий: {(product.calories*quantity/100):.0f}\n"
-        f"Белков: {(product.proteins*quantity/100):.0f}\n"
-        f"Жиров: {(product.fats*quantity/100):.0f}\n"
-        f"Углеводов: {(product.carbs*quantity/100):.0f}"
+        f"Калории: {(product.calories*quantity/100):.0f}\n"
+        f"Белки: {(product.proteins*quantity/100):.0f}\n"
+        f"Жиры: {(product.fats*quantity/100):.0f}\n"
+        f"Углеводы: {(product.carbs*quantity/100):.0f}"
     )
     await state.clear()
 
-@router.callback_query(lambda c: c.data.startswith("global_info"))
+@router.callback_query(lambda c: c.data.startswith("info_global"))
 async def global_info(callback_query: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     product_id = data.get("product_id")

@@ -1,0 +1,154 @@
+from aiogram import Router, types
+from aiogram.filters.command import Command
+
+from database import get_db
+from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
+from aiogram.fsm.context import FSMContext
+from states import SearchFavoriteProduct
+
+router = Router()
+
+@router.message(lambda message: message.text == "Найти избранное блюдо")
+async def handle_search_favorite_button(message: types.Message, state: FSMContext):
+    await start_search_favorite_product(message, state)
+
+@router.message(Command("search_favorite"))
+async def start_search_favorite_product(message: types.Message, state: FSMContext):
+    await message.answer("Введите часть названия избранного блюда:")
+    await state.set_state(SearchFavoriteProduct.waiting_for_search)
+
+
+@router.message(SearchFavoriteProduct.waiting_for_search)
+async def search_favorite_product(message: types.Message, state: FSMContext):
+    search_query = (message.text.strip().lower())
+
+    if not search_query:
+        await message.answer("Ошибка: введите часть названия избранного блюда.")
+        return
+
+    db = next(get_db())
+    products = db.query(FavoriteProduct).filter(FavoriteProduct.name.ilike(f"%{search_query}%")).all()
+
+    if not products:
+        await message.answer("Избранные блюда не найдены. Попробуйте другой запрос.")
+        await state.clear()
+        return
+
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text=products[i].name, callback_data=f"favorite_product_{products[i].id}"),
+         types.InlineKeyboardButton(text=products[i+1].name, callback_data=f"favorite_product_{products[i+1].id}")]
+        if i + 1 < len(products) else
+        [types.InlineKeyboardButton(text=products[i].name, callback_data=f"favorite_product_{products[i].id}")]
+        for i in range(0, len(products), 2)
+    ])
+
+    await message.answer("Найдены следующие избранные блюда:", reply_markup=keyboard)
+    await state.clear()
+
+@router.callback_query(lambda c: c.data.startswith("favorite_product_"))
+async def process_favorite_product(callback_query: types.CallbackQuery, state: FSMContext):
+    product_id = int(callback_query.data.split("_")[-1])
+
+    db = next(get_db())
+    product = db.query(FavoriteProduct).filter_by(id=product_id).first()
+
+    if not product:
+        await callback_query.message.answer("Ошибка: избранное блюдо не найдено.")
+        return
+
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
+         types.InlineKeyboardButton(text="Добавить", callback_data=f"add_favorite_product"),
+         types.InlineKeyboardButton(text="Информация", callback_data=f"info_favorite"),
+        types.InlineKeyboardButton(text="Удалить", callback_data=f"delete_favorite"),
+    ]])
+
+    await callback_query.message.answer(f"Вы выбрали: {product.name}", reply_markup = keyboard)
+    await state.clear()
+    await state.update_data(product_id = product_id, product_name = product.name)
+
+@router.callback_query(lambda c: c.data.startswith("add_favorite_product"))
+async def add_favorite_product(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    product_id = data.get("product_id")
+
+    db = next(get_db())
+    user_id = callback_query.from_user.id
+
+    user = db.query(User).filter_by(telegram_id=user_id).first()
+    if not user:
+        await callback_query.message.answer("Ошибка: пользователь не найден.")
+        await state.clear()
+        return
+
+    product = db.query(FavoriteProduct).filter_by(id=product_id).first()
+    if not product:
+        await callback_query.message.answer("Ошибка: избранное блюдо не найдено.")
+        await state.clear()
+        return
+
+    new_entry = CalorieEntry(
+        user_id=user.id,
+        favorite_product_id=product.id
+    )
+    db.add(new_entry)
+    db.commit()
+
+    await callback_query.message.answer(
+        f"Добавлено блюдо {product.name} ({product.quantity} г.)\n"
+        f"Калорий: {(product.calories * product.quantity / 100):.0f}\n"
+        f"Белков: {(product.proteins * product.quantity / 100):.0f}\n"
+        f"Жиров: {(product.fats * product.quantity / 100):.0f}\n"
+        f"Углеводов: {(product.carbs * product.quantity / 100):.0f}"
+    )
+
+@router.callback_query(lambda c: c.data.startswith("delete_favorite"))
+async def delete_favorite_request(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    product_name = data.get("product_name")
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
+        types.InlineKeyboardButton(text="Да", callback_data=f"deleting_accepted"),
+        types.InlineKeyboardButton(text="Нет", callback_data=f"deleting_rejected"),
+    ]])
+    await callback_query.message.answer(f"Вы точно хотите удалить блюдо {product_name}?", reply_markup=keyboard)
+
+@router.callback_query(lambda c: c.data.startswith("deleting_accepted"))
+async def delete_favorite(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    product_id = data.get("product_id")
+    product_name = data.get("product_name")
+
+    db = next(get_db())
+    product = db.query(FavoriteProduct).filter_by(id=product_id).first()
+    if product:
+        db.delete(product)
+        db.commit()
+        await callback_query.message.answer(f"Удалено избранное блюдо {product_name}.")
+    else:
+        await callback_query.message.answer("Ошибка: удаляемое избранное блюдо не найдено.")
+        await state.clear()
+
+@router.callback_query(lambda c: c.data.startswith("deleting_rejected"))
+async def delete_favorite(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.answer("Удаление отменено.")
+    await state.clear()
+
+@router.callback_query(lambda c: c.data.startswith("info_favorite"))
+async def favorite_info(callback_query: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    product_id = data.get("product_id")
+    db = next(get_db())
+    product = db.query(FavoriteProduct).filter_by(id=product_id).first()
+    if not product:
+        await callback_query.message.answer("Ошибка: избранное блюдо не найдено.")
+        await state.clear()
+        return
+
+    await callback_query.message.answer(
+        f"Информация об избранном блюде {product.name}:\n"
+        f"Вес: {product.quantity:.0f}\n"
+        f"Калории: {product.calories:.0f}\n"
+        f"Белки: {product.proteins:.0f}\n"
+        f"Жиры: {product.fats:.0f}\n"
+        f"Углеводы: {product.carbs:.0f}"
+    )
+    await state.clear()
