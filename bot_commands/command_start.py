@@ -12,8 +12,8 @@ router = Router()
 async def start(message: types.Message, state: FSMContext):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Добавить блюдо"), KeyboardButton(text="Добавить избранное блюдо")],
-            [KeyboardButton(text="Новое избранное блюдо"), KeyboardButton(text="Изменить цель по калориям")],
+            [KeyboardButton(text="Найти базовое блюдо"), KeyboardButton(text="Найти избранное блюдо")],
+            [KeyboardButton(text="Изменить цель по калориям")],
         ],
         resize_keyboard=True,
         # one_time_keyboard=True

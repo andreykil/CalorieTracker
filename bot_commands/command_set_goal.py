@@ -9,7 +9,7 @@ from states import SetCalorieGoal
 router = Router()
 
 @router.message(lambda message: message.text == "Изменить цель по калориям")
-async def handle_add_global_button(message: types.Message, state: FSMContext):
+async def handle_set_goal_button(message: types.Message, state: FSMContext):
     await set_calorie_goal(message, state)
 
 @router.message(Command("set_goal"))

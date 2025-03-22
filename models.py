@@ -43,12 +43,13 @@ class FavoriteProduct(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    quantity = Column(Integer, nullable=False)
     product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
-    custom_name = Column(String, nullable=True)
-    calories = Column(Integer, nullable=False)
-    proteins = Column(Integer, nullable=False)
-    fats = Column(Integer, nullable=False)
-    carbs = Column(Integer, nullable=False)
+    custom_name = Column(String, nullable=False)
+    calories = Column(Integer, nullable=True)
+    proteins = Column(Integer, nullable=True)
+    fats = Column(Integer, nullable=True)
+    carbs = Column(Integer, nullable=True)
 
     user = relationship("User", back_populates="favorites")
     global_product = relationship("GlobalProduct", back_populates="favorite_products")
@@ -63,8 +64,8 @@ class CalorieEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
+    quantity = Column(Integer, nullable=True)
     favorite_product_id = Column(Integer, ForeignKey('favorite_products.id'), nullable=True)
-    quantity = Column(Integer, nullable=False)
     date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="entries")

@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 import os
-from bot_commands import router_start, router_add_global, router_set_goal
+from bot_commands import router_start, router_search_global, router_set_goal
 
 load_dotenv()
 
@@ -12,7 +12,7 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
 dp.include_router(router_start)
-dp.include_router(router_add_global)
+dp.include_router(router_search_global)
 dp.include_router(router_set_goal)
 
 if __name__ == "__main__":
