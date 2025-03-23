@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.filters.command import Command
 
 from database import get_db
-from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
+from models import User, CalorieEntry, FavoriteProduct
 from aiogram.fsm.context import FSMContext
 from states import SearchFavoriteProduct
 

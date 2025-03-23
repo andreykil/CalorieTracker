@@ -5,6 +5,7 @@ from database import get_db
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from aiogram.fsm.context import FSMContext
 from states import SearchGlobalProduct
+from utils import info_global_product, info_favorite_product
 
 router = Router()
 
@@ -62,11 +63,11 @@ async def process_global_product(callback_query: types.CallbackQuery, state: FSM
          types.InlineKeyboardButton(text="Информация", callback_data=f"info_global"),
     ]])
 
-    await callback_query.message.answer(f"Вы выбрали: {product.name}", reply_markup = keyboard)
+    await callback_query.message.answer(f"Вы выбрали: {product.name}\n", reply_markup = keyboard)
     await state.clear()
     await state.update_data(product_id = product_id)
 
-@router.callback_query(lambda c: c.data.startswith("add_global_product"))
+@router.callback_query(lambda c: c.data == "add_global_product")
 async def add_global_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.answer("Введите количество (в граммах):")
     await state.set_state(SearchGlobalProduct.waiting_for_add_quantity)
@@ -124,11 +125,11 @@ async def to_favorite_name_request(message: types.Message, state: FSMContext):
     try:
         quantity = int(message.text)
         await state.update_data(quantity = quantity)
-    except ValueError:
-        await message.answer("Пожалуйста, введите корректное число.")
-    finally:
         await message.answer("Введите название избранного блюда:")
         await state.set_state(SearchGlobalProduct.waiting_for_favorite_name)
+    except ValueError:
+        await message.answer("Пожалуйста, введите корректное число.")
+        await state.clear()
 
 @router.message(SearchGlobalProduct.waiting_for_favorite_name)
 async def to_favorite(message: types.Message, state: FSMContext):
@@ -154,7 +155,7 @@ async def to_favorite(message: types.Message, state: FSMContext):
 
     new_favorite = FavoriteProduct(
         user_id=user.id,
-        product_id=product.id,
+        global_product_id=product.id,
         quantity=quantity,
         name=name,
         calories=product.calories,
@@ -165,17 +166,11 @@ async def to_favorite(message: types.Message, state: FSMContext):
     db.add(new_favorite)
     db.commit()
 
-    await message.answer(
-        f"Cоздано избранное блюдо {name}, {quantity} граммов\n"
-        f"Калории: {(product.calories*quantity/100):.0f}\n"
-        f"Белки: {(product.proteins*quantity/100):.0f}\n"
-        f"Жиры: {(product.fats*quantity/100):.0f}\n"
-        f"Углеводы: {(product.carbs*quantity/100):.0f}"
-    )
+    await message.answer(f"Cоздано избранное блюдо:\n" + info_favorite_product(new_favorite))
     await state.clear()
 
 @router.callback_query(lambda c: c.data.startswith("info_global"))
-async def global_info(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_global_info(callback_query: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     product_id = data.get("product_id")
     db = next(get_db())
@@ -185,11 +180,5 @@ async def global_info(callback_query: types.CallbackQuery, state: FSMContext):
         await state.clear()
         return
 
-    await callback_query.message.answer(
-        f"Информация о {product.name}:\n"
-        f"Калорий: {product.calories:.0f}\n"
-        f"Белков: {product.proteins:.0f}\n"
-        f"Жиров: {product.fats:.0f}\n"
-        f"Углеводов: {product.carbs:.0f}"
-    )
+    await callback_query.message.answer("Информация о блюде:\n" + info_global_product(product))
     await state.clear()

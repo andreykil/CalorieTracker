@@ -44,7 +44,7 @@ class FavoriteProduct(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     quantity = Column(Integer, nullable=False)
-    product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
+    global_product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
     name = Column(String, nullable=False)
     calories = Column(Integer, nullable=False)
     proteins = Column(Integer, nullable=False)
