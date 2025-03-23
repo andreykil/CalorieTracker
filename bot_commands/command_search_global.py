@@ -1,11 +1,12 @@
 from aiogram import Router, types
 from aiogram.filters.command import Command
+from aiogram.fsm.context import FSMContext
+from datetime import datetime
 
 from database import get_db
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
-from aiogram.fsm.context import FSMContext
 from states import SearchGlobalProduct
-from utils import info_global_product, info_favorite_product
+from utils import global_product_stats, favorite_product_stats, get_daily_stats
 
 router = Router()
 
@@ -15,7 +16,7 @@ async def handle_search_global_button(message: types.Message, state: FSMContext)
 
 @router.message(Command("search_global"))
 async def start_search_global_product(message: types.Message, state: FSMContext):
-    await message.answer("Введите часть названия блюда:")
+    await message.answer("Введите часть названия блюда, или ? чтобы увидеть все")
     await state.set_state(SearchGlobalProduct.waiting_for_search)
 
 
@@ -26,6 +27,9 @@ async def search_global_product(message: types.Message, state: FSMContext):
     if not search_query:
         await message.answer("Ошибка: введите часть названия блюда.")
         return
+
+    if search_query == '?':
+        search_query = ''
 
     db = next(get_db())
     products = db.query(GlobalProduct).filter(GlobalProduct.name.ilike(f"%{search_query}%")).all()
@@ -49,26 +53,29 @@ async def search_global_product(message: types.Message, state: FSMContext):
 @router.callback_query(lambda c: c.data.startswith("global_product_"))
 async def process_global_product(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = int(callback_query.data.split("_")[-1])
-
     db = next(get_db())
     product = db.query(GlobalProduct).filter_by(id=product_id).first()
-
     if not product:
         await callback_query.message.answer("Ошибка: Блюдо не найдено.")
         return
 
+    await callback_query.message.delete()
+    await callback_query.message.answer(f"Вы выбрали: {product.name}")
+
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
          types.InlineKeyboardButton(text="Добавить", callback_data=f"add_global_product"),
          types.InlineKeyboardButton(text="В избранные", callback_data=f"global_to_favorite"),
-         types.InlineKeyboardButton(text="Информация", callback_data=f"info_global"),
+         types.InlineKeyboardButton(text="Назад", callback_data=f"finish_search_global")
     ]])
 
-    await callback_query.message.answer(f"Вы выбрали: {product.name}\n", reply_markup = keyboard)
+    await callback_query.message.answer(f"Что дальше? Подробнее о блюде:\n" + global_product_stats(product),
+                                        reply_markup = keyboard)
     await state.clear()
     await state.update_data(product_id = product_id)
 
 @router.callback_query(lambda c: c.data == "add_global_product")
 async def add_global_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
     await callback_query.message.answer("Введите количество (в граммах):")
     await state.set_state(SearchGlobalProduct.waiting_for_add_quantity)
 
@@ -102,21 +109,17 @@ async def add_global(message: types.Message, state: FSMContext):
         db.add(new_entry)
         db.commit()
 
-        await message.answer(
-            f"Добавлено {quantity} граммов {product.name}.\n"
-            f"Калорий: {(product.calories*quantity/100):.0f}\n"
-            f"Белков: {(product.proteins*quantity/100):.0f}\n"
-            f"Жиров: {(product.fats*quantity/100):.0f}\n"
-            f"Углеводов: {(product.carbs*quantity/100):.0f}"
-        )
+        await message.answer(f"Добавлено {quantity} граммов {product.name}. Ваша статистика за сегодня:\n" +
+                             get_daily_stats(user, datetime.now().date()))
 
     except ValueError:
-        await message.answer("Некорректное число.")
+        await message.answer("Ошибка: некорректное число.")
     finally:
         await state.clear()
 
 @router.callback_query(lambda c: c.data.startswith("global_to_favorite"))
 async def to_favorite_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
     await callback_query.message.answer("Введите количество (в граммах):")
     await state.set_state(SearchGlobalProduct.waiting_for_favorite_quantity)
 
@@ -128,7 +131,7 @@ async def to_favorite_name_request(message: types.Message, state: FSMContext):
         await message.answer("Введите название избранного блюда:")
         await state.set_state(SearchGlobalProduct.waiting_for_favorite_name)
     except ValueError:
-        await message.answer("Пожалуйста, введите корректное число.")
+        await message.answer("Ошибка: некорректное число.")
         await state.clear()
 
 @router.message(SearchGlobalProduct.waiting_for_favorite_name)
@@ -165,20 +168,10 @@ async def to_favorite(message: types.Message, state: FSMContext):
     )
     db.add(new_favorite)
     db.commit()
-
-    await message.answer(f"Cоздано избранное блюдо:\n" + info_favorite_product(new_favorite))
+    await message.answer(f"Cоздано избранное блюдо {new_favorite.name}\n" + favorite_product_stats(new_favorite))
     await state.clear()
 
-@router.callback_query(lambda c: c.data.startswith("info_global"))
-async def process_global_info(callback_query: types.CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    product_id = data.get("product_id")
-    db = next(get_db())
-    product = db.query(GlobalProduct).filter_by(id=product_id).first()
-    if not product:
-        await callback_query.message.answer("Ошибка: блюдо не найдено.")
-        await state.clear()
-        return
-
-    await callback_query.message.answer("Информация о блюде:\n" + info_global_product(product))
+@router.callback_query(lambda c: c.data.startswith("finish_search_global"))
+async def finish_search_global_product(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
     await state.clear()

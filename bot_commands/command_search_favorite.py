@@ -1,10 +1,12 @@
 from aiogram import Router, types
 from aiogram.filters.command import Command
+from aiogram.fsm.context import FSMContext
+from datetime import datetime
 
 from database import get_db
 from models import User, CalorieEntry, FavoriteProduct
-from aiogram.fsm.context import FSMContext
 from states import SearchFavoriteProduct
+from utils import favorite_product_stats, get_daily_stats
 
 router = Router()
 
@@ -14,7 +16,7 @@ async def handle_search_favorite_button(message: types.Message, state: FSMContex
 
 @router.message(Command("search_favorite"))
 async def start_search_favorite_product(message: types.Message, state: FSMContext):
-    await message.answer("Введите часть названия избранного блюда:")
+    await message.answer("Введите часть названия избранного блюда, или ? чтобы увидеть все.")
     await state.set_state(SearchFavoriteProduct.waiting_for_search)
 
 
@@ -26,6 +28,8 @@ async def search_favorite_product(message: types.Message, state: FSMContext):
         await message.answer("Ошибка: введите часть названия избранного блюда.")
         return
 
+    if search_query == '?':
+        search_query = ''
     db = next(get_db())
     products = db.query(FavoriteProduct).filter(FavoriteProduct.name.ilike(f"%{search_query}%")).all()
 
@@ -48,23 +52,25 @@ async def search_favorite_product(message: types.Message, state: FSMContext):
 @router.callback_query(lambda c: c.data.startswith("favorite_product_"))
 async def process_favorite_product(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = int(callback_query.data.split("_")[-1])
-
     db = next(get_db())
-    product = db.query(FavoriteProduct).filter_by(id=product_id).first()
-
-    if not product:
+    fav_product = (db.query(FavoriteProduct).filter_by(id=product_id).first())
+    if not fav_product:
         await callback_query.message.answer("Ошибка: избранное блюдо не найдено.")
         return
 
+    await callback_query.message.delete()
+    await callback_query.message.answer(f"Вы выбрали: {fav_product.name}")
+
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
          types.InlineKeyboardButton(text="Добавить", callback_data=f"add_favorite_product"),
-         types.InlineKeyboardButton(text="Информация", callback_data=f"info_favorite"),
         types.InlineKeyboardButton(text="Удалить", callback_data=f"delete_favorite"),
+        types.InlineKeyboardButton(text="Назад", callback_data=f"finish_search_favorite"),
     ]])
 
-    await callback_query.message.answer(f"Вы выбрали: {product.name}", reply_markup = keyboard)
+    await callback_query.message.answer(f"Что дальше? Подробнее о блюде:\n" + favorite_product_stats(fav_product),
+                                        reply_markup = keyboard)
     await state.clear()
-    await state.update_data(product_id = product_id, product_name = product.name)
+    await state.update_data(product_id = product_id, product_name = fav_product.name)
 
 @router.callback_query(lambda c: c.data.startswith("add_favorite_product"))
 async def add_favorite_product(callback_query: types.CallbackQuery, state: FSMContext):
@@ -88,17 +94,16 @@ async def add_favorite_product(callback_query: types.CallbackQuery, state: FSMCo
 
     new_entry = CalorieEntry(
         user_id=user.id,
-        favorite_product_id=product.id
+        favorite_product_id=product.id,
+        quantity=product.quantity
     )
     db.add(new_entry)
     db.commit()
 
+    await callback_query.message.delete()
     await callback_query.message.answer(
-        f"Добавлено блюдо {product.name} ({product.quantity} г.)\n"
-        f"Калорий: {(product.calories * product.quantity / 100):.0f}\n"
-        f"Белков: {(product.proteins * product.quantity / 100):.0f}\n"
-        f"Жиров: {(product.fats * product.quantity / 100):.0f}\n"
-        f"Углеводов: {(product.carbs * product.quantity / 100):.0f}"
+        f"Добавлено блюдо {product.name} ({product.quantity} г.). Статистика за сегодня:\n" +
+        get_daily_stats(user, datetime.now().date())
     )
 
 @router.callback_query(lambda c: c.data.startswith("delete_favorite"))
@@ -109,6 +114,7 @@ async def delete_favorite_request(callback_query: types.CallbackQuery, state: FS
         types.InlineKeyboardButton(text="Да", callback_data=f"deleting_accepted"),
         types.InlineKeyboardButton(text="Нет", callback_data=f"deleting_rejected"),
     ]])
+    await callback_query.message.delete()
     await callback_query.message.answer(f"Вы точно хотите удалить блюдо {product_name}?", reply_markup=keyboard)
 
 @router.callback_query(lambda c: c.data.startswith("deleting_accepted"))
@@ -119,6 +125,7 @@ async def delete_favorite(callback_query: types.CallbackQuery, state: FSMContext
 
     db = next(get_db())
     product = db.query(FavoriteProduct).filter_by(id=product_id).first()
+    await callback_query.message.delete()
     if product:
         db.delete(product)
         db.commit()
@@ -129,26 +136,11 @@ async def delete_favorite(callback_query: types.CallbackQuery, state: FSMContext
 
 @router.callback_query(lambda c: c.data.startswith("deleting_rejected"))
 async def delete_favorite(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
     await callback_query.message.answer("Удаление отменено.")
     await state.clear()
 
-@router.callback_query(lambda c: c.data.startswith("info_favorite"))
-async def favorite_info(callback_query: types.CallbackQuery, state: FSMContext):
-    data = await state.get_data()
-    product_id = data.get("product_id")
-    db = next(get_db())
-    product = db.query(FavoriteProduct).filter_by(id=product_id).first()
-    if not product:
-        await callback_query.message.answer("Ошибка: избранное блюдо не найдено.")
-        await state.clear()
-        return
-
-    await callback_query.message.answer(
-        f"Информация об избранном блюде {product.name}:\n"
-        f"Вес: {product.quantity:.0f}\n"
-        f"Калории: {product.calories:.0f}\n"
-        f"Белки: {product.proteins:.0f}\n"
-        f"Жиры: {product.fats:.0f}\n"
-        f"Углеводы: {product.carbs:.0f}"
-    )
+@router.callback_query(lambda c: c.data.startswith("finish_search_favorite"))
+async def finish_search_favorite_product(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.delete()
     await state.clear()
