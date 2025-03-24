@@ -16,7 +16,7 @@ async def handle_search_global_button(message: types.Message, state: FSMContext)
 
 @router.message(Command("search_global"))
 async def start_search_global_product(message: types.Message, state: FSMContext):
-    await message.answer("Введите часть названия блюда, или ? чтобы увидеть все")
+    await message.answer("Введите часть названия блюда.")
     await state.set_state(SearchGlobalProduct.waiting_for_search)
 
 

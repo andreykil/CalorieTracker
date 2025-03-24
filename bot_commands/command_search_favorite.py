@@ -16,7 +16,7 @@ async def handle_search_favorite_button(message: types.Message, state: FSMContex
 
 @router.message(Command("search_favorite"))
 async def start_search_favorite_product(message: types.Message, state: FSMContext):
-    await message.answer("Введите часть названия избранного блюда, или ? чтобы увидеть все.")
+    await message.answer("Введите часть названия избранного блюда.")
     await state.set_state(SearchFavoriteProduct.waiting_for_search)
 
 
