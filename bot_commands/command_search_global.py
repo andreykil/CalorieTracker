@@ -6,7 +6,7 @@ from datetime import datetime
 from database import get_db
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from states import SearchGlobalProduct
-from utils import global_product_stats, favorite_product_stats, get_daily_stats
+from utils import global_product_stats, favorite_product_stats, get_daily_stats, entry_from_product
 from bot_commands.command_start import text_search_global
 
 router = Router()
@@ -102,16 +102,7 @@ async def add_global(message: types.Message, state: FSMContext):
             await state.clear()
             return
 
-        new_entry = CalorieEntry(
-            user_id=user.id,
-            product_id=product.id,
-            quantity=quantity,
-            calories=product.calories,
-            proteins=product.proteins,
-            fats=product.fats,
-            carbs=product.carbs,
-        )
-        db.add(new_entry)
+        db.add(entry_from_product(product, user, quantity))
         db.commit()
 
         await message.answer(f"Добавлено {quantity} граммов {product.name}. Ваша статистика за сегодня:\n" +

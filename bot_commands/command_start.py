@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 
 router = Router()
 
-text_search_global = "Найти основное блюдо"
+text_search_global = "Найти базовое блюдо"
 text_search_favorite = "Найти свое блюдо"
 text_create_favorite = "Создать свое блюдо"
 text_add_favorite_from_image = "Добавить свое блюдо по фото"
@@ -41,6 +41,16 @@ async def start(message: types.Message, state: FSMContext):
     else:
         await message.answer(f"C возвращением, {username or 'друг'}!",
                              reply_markup=keyboard)
+
+        await message.answer(
+            f"Краткая инструкция:\n\n"
+            f"В боте есть список базовых блюд, содержащий основные популярные продукты питания, и список ваших "
+            f"собственных блюд для более удобного доступа.\n\n"
+            f"Вы можете сделать любое базовое блюдо своим, указав вес порции, либо создать свое блюдо вручную, указав "
+            f"его характеристики.\n\n"
+            f"При создании своего блюда вы можете добавить его изображение. В дальнейшем ваши блюда, "
+            f"к которым добавлено изображение, можно будет добавлять в съеденные, отправив фото."
+        )
 
     # запрос цели калорий
     # if not user or user.calorie_goal is None:

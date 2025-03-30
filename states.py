@@ -20,3 +20,6 @@ class CreateFavoriteProduct(StatesGroup):
     waiting_for_fats = State()
     waiting_for_carbs = State()
     waiting_for_image = State()
+
+class AddFavoriteFromImage(StatesGroup):
+    waiting_for_image = State()

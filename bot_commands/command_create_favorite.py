@@ -93,11 +93,8 @@ class PhotoFilter(BaseFilter):
     async def __call__(self, message: types.Message) -> bool:
         return message.content_type == types.ContentType.PHOTO
 
-@router.message(
-    PhotoFilter(),
-    CreateFavoriteProduct.waiting_for_image
-)
-async def process_image(message: types.Message, state: FSMContext, bot: Bot):
+@router.message(PhotoFilter(), CreateFavoriteProduct.waiting_for_image)
+async def search_favorite_from_image(message: types.Message, state: FSMContext, bot: Bot):
 
     file_id = message.photo[-1].file_id
     file_info = await bot.get_file(file_id)
@@ -105,7 +102,6 @@ async def process_image(message: types.Message, state: FSMContext, bot: Bot):
 
     feature_vector = extract_feature_vector(downloaded_file.read())
     feature_vector_str = json.dumps(feature_vector.tolist())
-    feature_vector_str = None
     await state.update_data(feature_vector=feature_vector_str)
 
     await message.answer("Теперь блюдо будет распознаваться по изображению!")
@@ -139,5 +135,5 @@ async def finish_creating_favorite_product(message: types.Message, state: FSMCon
     )
     db.add(new_favorite)
     db.commit()
-    await message.answer(f"Создано избранное блюдо {new_favorite.name}\n" + favorite_product_stats(new_favorite))
+    await message.answer(f"Создано ваше блюдо {new_favorite.name}\n" + favorite_product_stats(new_favorite))
     await state.clear()

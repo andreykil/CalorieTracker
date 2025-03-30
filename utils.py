@@ -74,5 +74,16 @@ def get_daily_stats(user, target_date):
     )
     return stats
 
-
-
+def entry_from_product(product, user: User, quantity):
+    if not quantity:
+        quantity = product.quantity
+    entry = CalorieEntry(
+        user_id=user.id,
+        favorite_product_id=product.id,
+        quantity=quantity,
+        calories=product.calories,
+        proteins=product.proteins,
+        fats=product.fats,
+        carbs=product.carbs,
+    )
+    return entry
