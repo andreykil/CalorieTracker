@@ -17,9 +17,8 @@ async def handle_search_favorite_button(message: types.Message, state: FSMContex
 
 @router.message(Command("search_favorite"))
 async def start_search_favorite_product(message: types.Message, state: FSMContext):
-    await message.answer("Введите часть названия вашего блюда.")
+    await message.answer('Введите часть названия вашего блюда или "Все", чтобы увидеть полный список:')
     await state.set_state(SearchFavoriteProduct.waiting_for_search)
-
 
 @router.message(SearchFavoriteProduct.waiting_for_search)
 async def search_favorite_product(message: types.Message, state: FSMContext):
@@ -29,7 +28,7 @@ async def search_favorite_product(message: types.Message, state: FSMContext):
         await message.answer("Ошибка: введите часть названия вашего блюда.")
         return
 
-    if search_query == '?':
+    if search_query == 'все':
         search_query = ''
     db = next(get_db())
     products = db.query(FavoriteProduct).filter(FavoriteProduct.name.ilike(f"%{search_query}%")).all()
