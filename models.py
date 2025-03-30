@@ -64,7 +64,7 @@ class CalorieEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
+    global_product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
     favorite_product_id = Column(Integer, ForeignKey('favorite_products.id'), nullable=True)
     quantity = Column(Integer, nullable=False)
     calories = Column(Integer, nullable=False)

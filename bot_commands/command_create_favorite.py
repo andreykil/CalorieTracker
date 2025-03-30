@@ -71,7 +71,8 @@ async def process_favorite_fats(message: types.Message, state: FSMContext):
 async def process_favorite_carbs(message: types.Message, state: FSMContext):
     try:
         await state.update_data(carbs=int(message.text))
-        await state.clear()
+        await state.update_data(telegram_id=message.from_user.id)
+        await state.set_state(None)
         await image_request(message, state)
     except ValueError:
         await message.answer("Ошибка: некорректное число.")
@@ -117,13 +118,14 @@ async def process_no_image_button(callback_query: types.CallbackQuery, state: FS
 
 async def finish_creating_favorite_product(message: types.Message, state: FSMContext):
     db = next(get_db())
-    user_id = message.from_user.id
-    user = db.query(User).filter_by(telegram_id=user_id).first()
+    data = await state.get_data()
+    telegram_id = data.get("telegram_id")
+    user = db.query(User).filter_by(telegram_id=telegram_id).first()
     if not user:
         await message.answer("Ошибка: пользователь не найден.")
         await state.clear()
         return
-    data = await state.get_data()
+
     new_favorite = FavoriteProduct(
         global_product_id=data.get("global_product_id"),
         name=data.get("name"),

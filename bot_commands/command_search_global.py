@@ -6,7 +6,7 @@ from datetime import datetime
 from database import get_db
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from states import SearchGlobalProduct
-from utils import global_product_stats, favorite_product_stats, get_daily_stats, entry_from_product
+from utils import global_product_stats, favorite_product_stats, get_daily_stats, entry_from_global
 from bot_commands.command_start import text_search_global
 from bot_commands.command_create_favorite import image_request
 
@@ -55,16 +55,10 @@ async def search_global_product(message: types.Message, state: FSMContext):
 @router.callback_query(lambda c: c.data.startswith("global_product_"))
 async def process_global_product(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = int(callback_query.data.split("_")[-1])
-    user_id = callback_query.from_user.id
     db = next(get_db())
     product = db.query(GlobalProduct).filter_by(id=product_id).first()
     if not product:
         await callback_query.message.answer("Ошибка: Блюдо не найдено.")
-        await state.clear()
-        return
-    user = db.query(User).filter_by(telegram_id=user_id).first()
-    if not user:
-        await callback_query.message.answer("Ошибка: пользователь не найден.")
         await state.clear()
         return
 
@@ -81,7 +75,7 @@ async def process_global_product(callback_query: types.CallbackQuery, state: FSM
                                         reply_markup = keyboard)
 
     await state.update_data(global_product_id=product.id)
-    await state.update_data(user_id=user.id)
+    await state.update_data(telegram_id=callback_query.from_user.id)
     await state.update_data(calories=product.calories)
     await state.update_data(proteins=product.proteins)
     await state.update_data(fats=product.fats)
@@ -98,12 +92,11 @@ async def add_global(message: types.Message, state: FSMContext):
     try:
         quantity = int(message.text)
         data = await state.get_data()
-        product_id = data.get("product_id")
+        product_id = data.get("global_product_id")
+        telegram_id = data.get("telegram_id")
 
         db = next(get_db())
-        user_id = message.from_user.id
-
-        user = db.query(User).filter_by(telegram_id=user_id).first()
+        user = db.query(User).filter_by(telegram_id=telegram_id).first()
         if not user:
             await message.answer("Ошибка: пользователь не найден.")
             await state.clear()
@@ -115,10 +108,10 @@ async def add_global(message: types.Message, state: FSMContext):
             await state.clear()
             return
 
-        db.add(entry_from_product(product, user, quantity))
+        db.add(entry_from_global(product, user, quantity))
         db.commit()
 
-        await message.answer(f"Добавлено {quantity} граммов {product.name}. Ваша статистика за сегодня:\n" +
+        await message.answer(f"Добавлено {quantity}г. {product.name}.\n\nСтатистика за сегодня:\n" +
                              get_daily_stats(user, datetime.now().date()))
 
     except ValueError:

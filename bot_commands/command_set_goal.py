@@ -24,9 +24,9 @@ async def process_calorie_goal(message: types.Message, state: FSMContext):
         calorie_goal = int(message.text)
 
         db = next(get_db())
-        user_id = message.from_user.id
+        telegram_id = message.from_user.id
 
-        user = db.query(User).filter_by(telegram_id=user_id).first()
+        user = db.query(User).filter_by(telegram_id=telegram_id).first()
         if not user:
             await message.answer("Ошибка: пользователь не найден")
             await state.clear()

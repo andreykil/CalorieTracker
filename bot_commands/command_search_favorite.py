@@ -6,7 +6,7 @@ from datetime import datetime
 from database import get_db
 from models import User, CalorieEntry, FavoriteProduct
 from states import SearchFavoriteProduct
-from utils import favorite_product_stats, get_daily_stats, entry_from_product
+from utils import favorite_product_stats, get_daily_stats, entry_from_favorite
 from bot_commands.command_start import text_search_favorite
 
 router = Router()
@@ -79,9 +79,9 @@ async def add_favorite_product(callback_query: types.CallbackQuery, state: FSMCo
     product_id = data.get("product_id")
 
     db = next(get_db())
-    user_id = callback_query.from_user.id
+    telegram_id = callback_query.from_user.id
 
-    user = db.query(User).filter_by(telegram_id=user_id).first()
+    user = db.query(User).filter_by(telegram_id=telegram_id).first()
     if not user:
         await callback_query.message.answer("Ошибка: пользователь не найден.")
         await state.clear()
@@ -93,12 +93,12 @@ async def add_favorite_product(callback_query: types.CallbackQuery, state: FSMCo
         await state.clear()
         return
 
-    db.add(entry_from_product(product, user, None))
+    db.add(entry_from_favorite(product, user))
     db.commit()
 
     await callback_query.message.delete()
     await callback_query.message.answer(
-        f"Добавлено блюдо {product.name} ({product.quantity} г.). Статистика за сегодня:\n" +
+        f"Добавлено блюдо {product.name} ({product.quantity}г.).\n\nСтатистика за сегодня:\n" +
         get_daily_stats(user, datetime.now().date())
     )
 

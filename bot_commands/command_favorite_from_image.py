@@ -9,7 +9,7 @@ from database import get_db
 from models import User, FavoriteProduct
 from states import AddFavoriteFromImage
 from bot_commands.command_start import text_add_favorite_from_image
-from utils import extract_feature_vector, cosine_similarity, get_daily_stats, entry_from_product
+from utils import extract_feature_vector, cosine_similarity, get_daily_stats, entry_from_favorite
 
 router = Router()
 
@@ -67,7 +67,7 @@ async def process_calorie_goal(message: types.Message, state: FSMContext, bot: B
 
         similarity_limit = 0.5 # настроить
         if best_match and max_similarity > similarity_limit:
-            db.add(entry_from_product(best_match, user, None))
+            db.add(entry_from_favorite(best_match, user))
             db.commit()
             response = (f"Добавлено: {best_match.name} ({best_match.quantity}г.)\n\nСтатистика за сегодня:\n" +
                         get_daily_stats(user, datetime.now().date()))

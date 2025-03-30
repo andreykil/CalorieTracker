@@ -74,13 +74,23 @@ def get_daily_stats(user, target_date):
     )
     return stats
 
-def entry_from_product(product, user: User, quantity):
-    if not quantity:
-        quantity = product.quantity
+def entry_from_global(product: GlobalProduct, user: User, quantity):
+    entry = CalorieEntry(
+        user_id=user.id,
+        global_product_id=product.id,
+        quantity=quantity,
+        calories=product.calories,
+        proteins=product.proteins,
+        fats=product.fats,
+        carbs=product.carbs,
+    )
+    return entry
+
+def entry_from_favorite(product: FavoriteProduct, user: User):
     entry = CalorieEntry(
         user_id=user.id,
         favorite_product_id=product.id,
-        quantity=quantity,
+        quantity=product.quantity,
         calories=product.calories,
         proteins=product.proteins,
         fats=product.fats,

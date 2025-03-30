@@ -26,14 +26,14 @@ async def start(message: types.Message, state: FSMContext):
         # one_time_keyboard=True
     )
 
-    user_id = message.from_user.id
+    telegram_id = message.from_user.id
     username = message.from_user.username
 
     db = next(get_db())
 
-    user = db.query(User).filter_by(telegram_id=user_id).first()
+    user = db.query(User).filter_by(telegram_id=telegram_id).first()
     if not user:
-        new_user = User(telegram_id=user_id, username=username)
+        new_user = User(telegram_id=telegram_id, username=username)
         db.add(new_user)
         db.commit()
         await message.answer(f"Приветствую, {username or 'друг'}! Я помогу вам учитывать калории.",
