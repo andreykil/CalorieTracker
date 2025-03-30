@@ -68,23 +68,24 @@ async def process_favorite_fats(message: types.Message, state: FSMContext):
 
 
 @router.message(CreateFavoriteProduct.waiting_for_carbs)
-async def process_favorite_fats(message: types.Message, state: FSMContext):
+async def process_favorite_carbs(message: types.Message, state: FSMContext):
     try:
         await state.update_data(carbs=int(message.text))
-
-        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
-            types.InlineKeyboardButton(text="Да", callback_data=f"add_image"),
-            types.InlineKeyboardButton(text="Нет", callback_data=f"not_add_image"),
-        ]])
-
-        await message.answer("Хотите ли вы добавить фото блюда для быстрого распознавания?", reply_markup=keyboard)
-        await state.set_state(CreateFavoriteProduct.waiting_for_carbs)
+        await state.clear()
+        await image_request(message, state)
     except ValueError:
         await message.answer("Ошибка: некорректное число.")
         await state.clear()
 
+async def image_request(message: types.Message, state: FSMContext):
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
+        types.InlineKeyboardButton(text="Да", callback_data=f"add_image"),
+        types.InlineKeyboardButton(text="Нет", callback_data=f"not_add_image"),
+    ]])
+    await message.answer("Хотите ли вы добавить фото блюда для быстрого распознавания?", reply_markup=keyboard)
+
 @router.callback_query(lambda c: c.data == "add_image")
-async def finish_search_global_product(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_add_image_button(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.delete()
     await callback_query.message.answer("Отправьте изображение блюда.")
     await state.set_state(CreateFavoriteProduct.waiting_for_image)
@@ -94,7 +95,7 @@ class PhotoFilter(BaseFilter):
         return message.content_type == types.ContentType.PHOTO
 
 @router.message(PhotoFilter(), CreateFavoriteProduct.waiting_for_image)
-async def search_favorite_from_image(message: types.Message, state: FSMContext, bot: Bot):
+async def process_image(message: types.Message, state: FSMContext, bot: Bot):
 
     file_id = message.photo[-1].file_id
     file_info = await bot.get_file(file_id)
@@ -108,7 +109,7 @@ async def search_favorite_from_image(message: types.Message, state: FSMContext, 
     await finish_creating_favorite_product(message, state)
 
 @router.callback_query(lambda c: c.data == "not_add_image")
-async def process_no_image(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_no_image_button(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.delete()
     await callback_query.message.answer("Изображение блюда отсутствует.")
     await state.update_data(feature_vector=None)
@@ -124,6 +125,7 @@ async def finish_creating_favorite_product(message: types.Message, state: FSMCon
         return
     data = await state.get_data()
     new_favorite = FavoriteProduct(
+        global_product_id=data.get("global_product_id"),
         name=data.get("name"),
         user_id=user.id,
         quantity=data.get("quantity"),

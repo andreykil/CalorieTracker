@@ -65,15 +65,20 @@ async def process_calorie_goal(message: types.Message, state: FSMContext, bot: B
                 max_similarity = similarity
                 best_match = product
 
-        if best_match and max_similarity > 0.5:  # настроить
-            response = f"Добавлено: {best_match.name}\n" + get_daily_stats(user, datetime.now().date())
+        similarity_limit = 0.5 # настроить
+        if best_match and max_similarity > similarity_limit:
+            db.add(entry_from_product(best_match, user, None))
+            db.commit()
+            response = (f"Добавлено: {best_match.name} ({best_match.quantity}г.)\n\nСтатистика за сегодня:\n" +
+                        get_daily_stats(user, datetime.now().date()))
             await message.answer(response)
-            await message.answer(f"Similarity: {max_similarity}")
         else:
             await message.answer("Не удалось найти похожее среди ваших блюд.")
 
-        db.add(entry_from_product(best_match, user, None))
-        db.commit()
+        # debug info
+        if best_match:
+            await message.answer(f"Similarity: {max_similarity}\nSimilarity limit: {similarity_limit}")
+
         await state.clear()
 
     except Exception as e:

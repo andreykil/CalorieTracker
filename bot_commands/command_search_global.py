@@ -8,6 +8,7 @@ from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from states import SearchGlobalProduct
 from utils import global_product_stats, favorite_product_stats, get_daily_stats, entry_from_product
 from bot_commands.command_start import text_search_global
+from bot_commands.command_create_favorite import image_request
 
 router = Router()
 
@@ -54,10 +55,17 @@ async def search_global_product(message: types.Message, state: FSMContext):
 @router.callback_query(lambda c: c.data.startswith("global_product_"))
 async def process_global_product(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = int(callback_query.data.split("_")[-1])
+    user_id = callback_query.from_user.id
     db = next(get_db())
     product = db.query(GlobalProduct).filter_by(id=product_id).first()
     if not product:
         await callback_query.message.answer("Ошибка: Блюдо не найдено.")
+        await state.clear()
+        return
+    user = db.query(User).filter_by(telegram_id=user_id).first()
+    if not user:
+        await callback_query.message.answer("Ошибка: пользователь не найден.")
+        await state.clear()
         return
 
     await callback_query.message.delete()
@@ -71,8 +79,13 @@ async def process_global_product(callback_query: types.CallbackQuery, state: FSM
 
     await callback_query.message.answer(f"Что дальше? Подробнее о блюде:\n" + global_product_stats(product),
                                         reply_markup = keyboard)
-    await state.clear()
-    await state.update_data(product_id = product_id)
+
+    await state.update_data(global_product_id=product.id)
+    await state.update_data(user_id=user.id)
+    await state.update_data(calories=product.calories)
+    await state.update_data(proteins=product.proteins)
+    await state.update_data(fats=product.fats)
+    await state.update_data(carbs=product.carbs)
 
 @router.callback_query(lambda c: c.data == "add_global_product")
 async def add_global_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
@@ -114,58 +127,27 @@ async def add_global(message: types.Message, state: FSMContext):
         await state.clear()
 
 @router.callback_query(lambda c: c.data == "global_to_favorite")
-async def to_favorite_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_to_favorite_button(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.delete()
-    await callback_query.message.answer("Введите количество (в граммах):")
+    await callback_query.message.answer("Введите название вашего блюда:")
+    await state.set_state(SearchGlobalProduct.waiting_for_favorite_name)
+
+@router.message(SearchGlobalProduct.waiting_for_favorite_name)
+async def process_to_favorite_name(message: types.Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    await message.answer("Введите количество (в граммах):")
     await state.set_state(SearchGlobalProduct.waiting_for_favorite_quantity)
 
 @router.message(SearchGlobalProduct.waiting_for_favorite_quantity)
-async def to_favorite_name_request(message: types.Message, state: FSMContext):
+async def process_to_favorite_quantity(message: types.Message, state: FSMContext):
     try:
         quantity = int(message.text)
-        await state.update_data(quantity = quantity)
-        await message.answer("Введите название избранного блюда:")
-        await state.set_state(SearchGlobalProduct.waiting_for_favorite_name)
+        await state.update_data(quantity=quantity)
+        await state.set_state(None)
+        await image_request(message, state)
     except ValueError:
         await message.answer("Ошибка: некорректное число.")
         await state.clear()
-
-@router.message(SearchGlobalProduct.waiting_for_favorite_name)
-async def to_favorite(message: types.Message, state: FSMContext):
-    name = str(message.text)
-    data = await state.get_data()
-    product_id = data.get("product_id")
-    quantity = data.get("quantity")
-
-    db = next(get_db())
-    user_id = message.from_user.id
-
-    user = db.query(User).filter_by(telegram_id=user_id).first()
-    if not user:
-        await message.answer("Ошибка: пользователь не найден.")
-        await state.clear()
-        return
-
-    product = db.query(GlobalProduct).filter_by(id=product_id).first()
-    if not product:
-        await message.answer("Ошибка: блюдо не найден.")
-        await state.clear()
-        return
-
-    new_favorite = FavoriteProduct(
-        user_id=user.id,
-        global_product_id=product.id,
-        quantity=quantity,
-        name=name,
-        calories=product.calories,
-        proteins=product.proteins,
-        fats=product.fats,
-        carbs=product.carbs
-    )
-    db.add(new_favorite)
-    db.commit()
-    await message.answer(f"Cоздано избранное блюдо {new_favorite.name}\n" + favorite_product_stats(new_favorite))
-    await state.clear()
 
 @router.callback_query(lambda c: c.data == "finish_search_global")
 async def finish_search_global_product(callback_query: types.CallbackQuery, state: FSMContext):
