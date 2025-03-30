@@ -1,5 +1,31 @@
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from database import get_db
+from io import BytesIO
+from datetime import datetime, timedelta
+
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.applications.resnet50 import preprocess_input
+import numpy as np
+import json
+
+
+base_model = ResNet50(weights='imagenet', include_top=False)
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+feature_model = Model(inputs=base_model.input, outputs=x)
+
+def extract_feature_vector(file_data: bytes) -> np.ndarray:
+    img = load_img(BytesIO(file_data), target_size=(224, 224))
+    img_array = img_to_array(img)
+    img_array = preprocess_input(np.expand_dims(img_array, axis=0))
+    feature_vector = feature_model.predict(img_array)[0]
+    return feature_vector
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 def favorite_product_stats(product : FavoriteProduct):
     stats = (
@@ -21,8 +47,6 @@ def global_product_stats(product : GlobalProduct):
     return stats
 
 
-from datetime import datetime, timedelta
-
 def get_daily_stats(user, target_date):
     start_of_day = datetime(target_date.year, target_date.month, target_date.day)
     end_of_day = start_of_day + timedelta(days=1)
@@ -37,16 +61,10 @@ def get_daily_stats(user, target_date):
     total_fats = 0
     total_carbs = 0
     for entry in daily_entries:
-        if entry.global_product:
-            total_calories += entry.global_product.calories * entry.quantity / 100
-            total_proteins += entry.global_product.proteins * entry.quantity / 100
-            total_fats += entry.global_product.fats * entry.quantity / 100
-            total_carbs += entry.global_product.carbs * entry.quantity / 100
-        else:
-            total_calories += entry.favorite_product.calories * entry.quantity / 100
-            total_proteins += entry.favorite_product.proteins * entry.quantity / 100
-            total_fats += entry.favorite_product.fats * entry.quantity / 100
-            total_carbs += entry.favorite_product.carbs * entry.quantity / 100
+        total_calories += entry.calories * entry.quantity / 100
+        total_proteins += entry.proteins * entry.quantity / 100
+        total_fats += entry.fats * entry.quantity / 100
+        total_carbs += entry.carbs * entry.quantity / 100
 
     stats = (
         f"Калории: {total_calories:.0f} ккал\n"
@@ -55,3 +73,6 @@ def get_daily_stats(user, target_date):
         f"Углеводы: {total_carbs:.0f} г"
     )
     return stats
+
+
+

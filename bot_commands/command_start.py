@@ -8,12 +8,19 @@ from aiogram.fsm.context import FSMContext
 
 router = Router()
 
+text_search_global = "Найти основное блюдо"
+text_search_favorite = "Найти свое блюдо"
+text_create_favorite = "Создать свое блюдо"
+text_add_favorite_from_image = "Добавить свое блюдо по фото"
+text_set_goal = "Изменить цель по калориям"
+
 @router.message(Command("start"))
 async def start(message: types.Message, state: FSMContext):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Найти базовое блюдо"), KeyboardButton(text="Найти избранное блюдо")],
-            [KeyboardButton(text="Изменить цель по калориям"), KeyboardButton(text="Создать избранное блюдо")],
+            [KeyboardButton(text=text_add_favorite_from_image), KeyboardButton(text=text_search_favorite)],
+            [KeyboardButton(text=text_search_global), KeyboardButton(text=text_create_favorite)],
+            [KeyboardButton(text=text_set_goal)],
         ],
         resize_keyboard=True,
         # one_time_keyboard=True

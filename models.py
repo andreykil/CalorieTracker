@@ -50,6 +50,7 @@ class FavoriteProduct(Base):
     proteins = Column(Integer, nullable=False)
     fats = Column(Integer, nullable=False)
     carbs = Column(Integer, nullable=False)
+    feature_vector = Column(String, nullable=True)
 
     user = relationship("User", back_populates="favorites")
     global_product = relationship("GlobalProduct", back_populates="favorite_products")
@@ -64,8 +65,12 @@ class CalorieEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     product_id = Column(Integer, ForeignKey('global_products.id'), nullable=True)
-    quantity = Column(Integer, nullable=True)
     favorite_product_id = Column(Integer, ForeignKey('favorite_products.id'), nullable=True)
+    quantity = Column(Integer, nullable=False)
+    calories = Column(Integer, nullable=False)
+    proteins = Column(Integer, nullable=False)
+    fats = Column(Integer, nullable=False)
+    carbs = Column(Integer, nullable=False)
     date = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="entries")

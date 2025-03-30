@@ -7,10 +7,11 @@ from database import get_db
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from states import SearchGlobalProduct
 from utils import global_product_stats, favorite_product_stats, get_daily_stats
+from bot_commands.command_start import text_search_global
 
 router = Router()
 
-@router.message(lambda message: message.text == "Найти базовое блюдо")
+@router.message(lambda message: message.text == text_search_global)
 async def handle_search_global_button(message: types.Message, state: FSMContext):
     await start_search_global_product(message, state)
 
@@ -104,7 +105,11 @@ async def add_global(message: types.Message, state: FSMContext):
         new_entry = CalorieEntry(
             user_id=user.id,
             product_id=product.id,
-            quantity=quantity
+            quantity=quantity,
+            calories=product.calories,
+            proteins=product.proteins,
+            fats=product.fats,
+            carbs=product.carbs,
         )
         db.add(new_entry)
         db.commit()
@@ -117,7 +122,7 @@ async def add_global(message: types.Message, state: FSMContext):
     finally:
         await state.clear()
 
-@router.callback_query(lambda c: c.data.startswith("global_to_favorite"))
+@router.callback_query(lambda c: c.data == "global_to_favorite")
 async def to_favorite_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.delete()
     await callback_query.message.answer("Введите количество (в граммах):")
@@ -171,7 +176,7 @@ async def to_favorite(message: types.Message, state: FSMContext):
     await message.answer(f"Cоздано избранное блюдо {new_favorite.name}\n" + favorite_product_stats(new_favorite))
     await state.clear()
 
-@router.callback_query(lambda c: c.data.startswith("finish_search_global"))
+@router.callback_query(lambda c: c.data == "finish_search_global")
 async def finish_search_global_product(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.delete()
     await state.clear()

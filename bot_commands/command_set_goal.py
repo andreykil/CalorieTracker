@@ -5,10 +5,11 @@ from aiogram.fsm.context import FSMContext
 from database import get_db
 from models import User
 from states import SetCalorieGoal
+from bot_commands.command_start import text_set_goal
 
 router = Router()
 
-@router.message(lambda message: message.text == "Изменить цель по калориям")
+@router.message(lambda message: message.text == text_set_goal)
 async def handle_set_goal_button(message: types.Message, state: FSMContext):
     await set_calorie_goal(message, state)
 
