@@ -26,3 +26,6 @@ class CreateFavoriteProduct(StatesGroup):
 
 class AddFavoriteFromImage(StatesGroup):
     waiting_for_image = State()
+
+class DailyStats(StatesGroup):
+    waiting_for_date = State()

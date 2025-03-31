@@ -7,7 +7,8 @@ from bot_commands import (
     router_set_goal,
     router_search_favorite,
     router_create_favorite,
-    router_favorite_from_image
+    router_favorite_from_image,
+    router_daily_stats
 )
 
 load_dotenv()
@@ -24,6 +25,7 @@ dp.include_router(router_search_global)
 dp.include_router(router_search_favorite)
 dp.include_router(router_create_favorite)
 dp.include_router(router_favorite_from_image)
+dp.include_router(router_daily_stats)
 
 if __name__ == "__main__":
     dp.run_polling(bot)

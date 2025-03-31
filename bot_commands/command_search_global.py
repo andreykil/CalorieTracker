@@ -4,26 +4,24 @@ from aiogram.fsm.context import FSMContext
 from datetime import datetime
 
 from database import get_db
-from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
+from models import User, GlobalProduct
 from states import SearchGlobalProduct
-from utils import global_product_stats, favorite_product_stats, get_daily_stats, entry_from_global
-from bot_commands.command_start import text_search_global
+from utils import global_product_stats, get_daily_stats, entry_from_global, text_search_global
 from bot_commands.command_create_favorite import image_request
 
 router = Router()
 
 @router.message(lambda message: message.text == text_search_global)
 async def handle_search_global_button(message: types.Message, state: FSMContext):
-    await start_search_global_product(message, state)
+    await search_global_product_command(message, state)
 
 @router.message(Command("search_global"))
-async def start_search_global_product(message: types.Message, state: FSMContext):
+async def search_global_product_command(message: types.Message, state: FSMContext):
     await message.answer('Введите часть названия блюда или "Все", чтобы увидеть полный список:')
     await state.set_state(SearchGlobalProduct.waiting_for_search)
 
-
 @router.message(SearchGlobalProduct.waiting_for_search)
-async def search_global_product(message: types.Message, state: FSMContext):
+async def process_global_product_search(message: types.Message, state: FSMContext):
     search_query = (message.text.strip().lower())
 
     if not search_query:
@@ -41,6 +39,8 @@ async def search_global_product(message: types.Message, state: FSMContext):
         await state.clear()
         return
 
+    products = products[:10]
+
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
         [types.InlineKeyboardButton(text=products[i].name, callback_data=f"global_product_{products[i].id}"),
          types.InlineKeyboardButton(text=products[i+1].name, callback_data=f"global_product_{products[i+1].id}")]
@@ -53,7 +53,7 @@ async def search_global_product(message: types.Message, state: FSMContext):
     await state.clear()
 
 @router.callback_query(lambda c: c.data.startswith("global_product_"))
-async def process_global_product(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_chosen_global_product(callback_query: types.CallbackQuery, state: FSMContext):
     product_id = int(callback_query.data.split("_")[-1])
     db = next(get_db())
     product = db.query(GlobalProduct).filter_by(id=product_id).first()
@@ -82,13 +82,13 @@ async def process_global_product(callback_query: types.CallbackQuery, state: FSM
     await state.update_data(carbs=product.carbs)
 
 @router.callback_query(lambda c: c.data == "add_global_product")
-async def add_global_quantity_request(callback_query: types.CallbackQuery, state: FSMContext):
+async def process_add_global_button(callback_query: types.CallbackQuery, state: FSMContext):
     await callback_query.message.delete()
     await callback_query.message.answer("Введите количество (в граммах):")
     await state.set_state(SearchGlobalProduct.waiting_for_add_quantity)
 
 @router.message(SearchGlobalProduct.waiting_for_add_quantity)
-async def add_global(message: types.Message, state: FSMContext):
+async def process_add_global_quantity(message: types.Message, state: FSMContext):
     try:
         quantity = int(message.text)
         data = await state.get_data()

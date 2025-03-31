@@ -30,4 +30,4 @@ if __name__ == "__main__":
     db.add(pear)
     db.add(tomato)
     db.commit()
-    print("Добавлено: Суп, Каша, Помидор")
+    print("Добавлено несколько базовых блюд")

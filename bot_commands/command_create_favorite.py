@@ -4,19 +4,19 @@ from aiogram.fsm.context import FSMContext
 import json
 
 from database import get_db
-from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
+from models import User, FavoriteProduct
 from states import CreateFavoriteProduct
-from utils import favorite_product_stats, extract_feature_vector
-from bot_commands.command_start import text_create_favorite
+from image_recognition import extract_feature_vector
+from utils import favorite_product_stats, text_create_favorite
 
 router = Router()
 
 @router.message(lambda message: message.text == text_create_favorite)
 async def handle_create_favorite_product_button(message: types.Message, state: FSMContext):
-    await create_favorite_product(message, state)
+    await create_favorite_product_command(message, state)
 
 @router.message(Command("create_favorite"))
-async def create_favorite_product(message: types.Message, state: FSMContext):
+async def create_favorite_product_command(message: types.Message, state: FSMContext):
     await message.answer("Введите название блюда:")
     await state.set_state(CreateFavoriteProduct.waiting_for_name)
 

@@ -1,31 +1,12 @@
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
-from database import get_db
-from io import BytesIO
 from datetime import datetime, timedelta
 
-from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import GlobalAveragePooling2D
-from tensorflow.keras.preprocessing.image import load_img, img_to_array
-from tensorflow.keras.applications.resnet50 import preprocess_input
-import numpy as np
-import json
-
-
-base_model = ResNet50(weights='imagenet', include_top=False)
-x = base_model.output
-x = GlobalAveragePooling2D()(x)
-feature_model = Model(inputs=base_model.input, outputs=x)
-
-def extract_feature_vector(file_data: bytes) -> np.ndarray:
-    img = load_img(BytesIO(file_data), target_size=(224, 224))
-    img_array = img_to_array(img)
-    img_array = preprocess_input(np.expand_dims(img_array, axis=0))
-    feature_vector = feature_model.predict(img_array)[0]
-    return feature_vector
-
-def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+text_search_global = "Найти базовое блюдо"
+text_search_favorite = "Найти свое блюдо"
+text_create_favorite = "Создать свое блюдо"
+text_add_favorite_from_image = "Съесть свое блюдо по фото"
+text_set_goal = "Изменить цель по калориям"
+text_daily_stats = "Статистика за день"
 
 def favorite_product_stats(product : FavoriteProduct):
     stats = (
@@ -46,7 +27,6 @@ def global_product_stats(product : GlobalProduct):
     )
     return stats
 
-
 def get_daily_stats(user, target_date):
     start_of_day = datetime(target_date.year, target_date.month, target_date.day)
     end_of_day = start_of_day + timedelta(days=1)
@@ -66,19 +46,19 @@ def get_daily_stats(user, target_date):
         total_fats += entry.fats * entry.quantity / 100
         total_carbs += entry.carbs * entry.quantity / 100
 
-    calories_str = f"Калории: {total_calories:.0f}"
+    calories_str = f"Калории:  {total_calories:.0f}"
     if user.calorie_goal is not None:
         calories_str += f" / {user.calorie_goal} ккал"
     else:
         calories_str += " ккал"
 
-    proteins_str = f"Белки: {total_proteins:.0f}"
+    proteins_str = f"Белки:       {total_proteins:.0f}"
     if user.proteins_goal is not None:
         proteins_str += f" / {user.proteins_goal} г"
     else:
         proteins_str += " г"
 
-    fats_str = f"Жиры: {total_fats:.0f}"
+    fats_str = f"Жиры:       {total_fats:.0f}"
     if user.fats_goal is not None:
         fats_str += f" / {user.fats_goal} г"
     else:
@@ -96,7 +76,6 @@ def get_daily_stats(user, target_date):
         f"{fats_str}\n"
         f"{carbs_str}\n"
     )
-
     return stats
 
 def entry_from_global(product: GlobalProduct, user: User, quantity):

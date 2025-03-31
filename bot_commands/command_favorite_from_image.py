@@ -8,17 +8,17 @@ from datetime import datetime
 from database import get_db
 from models import User, FavoriteProduct
 from states import AddFavoriteFromImage
-from bot_commands.command_start import text_add_favorite_from_image
-from utils import extract_feature_vector, cosine_similarity, get_daily_stats, entry_from_favorite
+from image_recognition import extract_feature_vector, cosine_similarity
+from utils import get_daily_stats, entry_from_favorite, text_add_favorite_from_image
 
 router = Router()
 
 @router.message(lambda message: message.text == text_add_favorite_from_image)
 async def handle_set_goal_button(message: types.Message, state: FSMContext):
-    await add_favorite_from_image(message, state)
+    await add_favorite_from_image_button(message, state)
 
 @router.message(Command("favorite_from_image"))
-async def add_favorite_from_image(message: types.Message, state: FSMContext):
+async def add_favorite_from_image_button(message: types.Message, state: FSMContext):
     await message.answer("Отправьте фото блюда:")
     await state.set_state(AddFavoriteFromImage.waiting_for_image)
 
@@ -27,7 +27,7 @@ class PhotoFilter(BaseFilter):
         return message.content_type == types.ContentType.PHOTO
 
 @router.message(PhotoFilter(), AddFavoriteFromImage.waiting_for_image)
-async def process_calorie_goal(message: types.Message, state: FSMContext, bot: Bot):
+async def process_image(message: types.Message, state: FSMContext, bot: Bot):
     try:
         db = next(get_db())
         user_id = message.from_user.id
@@ -84,4 +84,3 @@ async def process_calorie_goal(message: types.Message, state: FSMContext, bot: B
     except Exception as e:
         await message.answer(f"Ошибка: {str(e)}")
         await state.clear()
-

@@ -1,26 +1,29 @@
 from aiogram import Router, types
 from aiogram.filters.command import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.fsm.context import FSMContext
 
 from database import get_db
 from models import User
-from aiogram.fsm.context import FSMContext
+from bot_commands.command_set_goal import set_goal_command
+from utils import (
+    text_daily_stats,
+    text_add_favorite_from_image,
+    text_set_goal,
+    text_search_global,
+    text_search_favorite,
+    text_create_favorite
+)
 
 router = Router()
 
-text_search_global = "Найти базовое блюдо"
-text_search_favorite = "Найти свое блюдо"
-text_create_favorite = "Создать свое блюдо"
-text_add_favorite_from_image = "Съесть свое блюдо по фото"
-text_set_goal = "Изменить цель по калориям"
-
 @router.message(Command("start"))
-async def start(message: types.Message, state: FSMContext):
+async def start_command(message: types.Message, state: FSMContext):
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=text_add_favorite_from_image), KeyboardButton(text=text_search_favorite)],
             [KeyboardButton(text=text_search_global), KeyboardButton(text=text_create_favorite)],
-            [KeyboardButton(text=text_set_goal)],
+            [KeyboardButton(text=text_set_goal), KeyboardButton(text=text_daily_stats)],
         ],
         resize_keyboard=True,
         # one_time_keyboard=True
@@ -52,8 +55,6 @@ async def start(message: types.Message, state: FSMContext):
         f"к которым добавлено изображение, можно будет добавлять в съеденные, отправив фото."
     )
 
-    # запрос цели калорий
-    # if not user or user.calorie_goal is None:
-    #     await message.answer("Укажи твою цель по калориям (число):")
-    #     await state.set_state(SetCalorieGoal.waiting_for_calorie_goal)
-
+    # optional goal request
+    if not user or user.calorie_goal is None:
+        await set_goal_command(message, state)
