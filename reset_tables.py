@@ -12,12 +12,10 @@ def drop_all_tables():
         print(f"Удаляется таблица: {table.name}")
         table.drop(engine)
 
-
 def create_all_tables():
     print("Создание таблиц...")
     Base.metadata.create_all(bind=engine)
     print("Таблицы успешно созданы!")
-
 
 if __name__ == "__main__":
     print("Сброс таблиц...")

@@ -66,8 +66,8 @@ async def process_global_product(callback_query: types.CallbackQuery, state: FSM
     await callback_query.message.answer(f"Вы выбрали: {product.name}")
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
-         types.InlineKeyboardButton(text="Добавить", callback_data=f"add_global_product"),
-         types.InlineKeyboardButton(text="В избранные", callback_data=f"global_to_favorite"),
+         types.InlineKeyboardButton(text="Съесть", callback_data=f"add_global_product"),
+         types.InlineKeyboardButton(text="В свои", callback_data=f"global_to_favorite"),
          types.InlineKeyboardButton(text="Назад", callback_data=f"finish_search_global")
     ]])
 

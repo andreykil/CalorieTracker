@@ -66,12 +66,37 @@ def get_daily_stats(user, target_date):
         total_fats += entry.fats * entry.quantity / 100
         total_carbs += entry.carbs * entry.quantity / 100
 
+    calories_str = f"Калории: {total_calories:.0f}"
+    if user.calorie_goal is not None:
+        calories_str += f" / {user.calorie_goal} ккал"
+    else:
+        calories_str += " ккал"
+
+    proteins_str = f"Белки: {total_proteins:.0f}"
+    if user.proteins_goal is not None:
+        proteins_str += f" / {user.proteins_goal} г"
+    else:
+        proteins_str += " г"
+
+    fats_str = f"Жиры: {total_fats:.0f}"
+    if user.fats_goal is not None:
+        fats_str += f" / {user.fats_goal} г"
+    else:
+        fats_str += " г"
+
+    carbs_str = f"Углеводы: {total_carbs:.0f}"
+    if user.carbs_goal is not None:
+        carbs_str += f" / {user.carbs_goal} г"
+    else:
+        carbs_str += " г"
+
     stats = (
-        f"Калории: {total_calories:.0f} ккал\n"
-        f"Белки: {total_proteins:.0f} г\n"
-        f"Жиры: {total_fats:.0f} г\n"
-        f"Углеводы: {total_carbs:.0f} г"
+        f"{calories_str}\n"
+        f"{proteins_str}\n"
+        f"{fats_str}\n"
+        f"{carbs_str}\n"
     )
+
     return stats
 
 def entry_from_global(product: GlobalProduct, user: User, quantity):

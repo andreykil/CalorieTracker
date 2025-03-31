@@ -2,6 +2,9 @@ from aiogram.fsm.state import StatesGroup, State
 
 class SetCalorieGoal(StatesGroup):
     waiting_for_calorie_goal = State()
+    waiting_for_proteins_goal = State()
+    waiting_for_fats_goal = State()
+    waiting_for_carbs_goal = State()
 
 class SearchGlobalProduct(StatesGroup):
     waiting_for_search = State()

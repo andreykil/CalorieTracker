@@ -13,6 +13,9 @@ class User(Base):
     telegram_id = Column(BigInteger, unique=True, nullable=False)
     username = Column(String, nullable=True)
     calorie_goal = Column(Integer, nullable=True)
+    proteins_goal = Column(Integer, nullable=True)
+    fats_goal = Column(Integer, nullable=True)
+    carbs_goal = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     favorites = relationship("FavoriteProduct", back_populates="user")

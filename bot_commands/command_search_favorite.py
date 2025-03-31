@@ -62,7 +62,7 @@ async def process_favorite_product(callback_query: types.CallbackQuery, state: F
     await callback_query.message.answer(f"Вы выбрали: {fav_product.name}")
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[
-         types.InlineKeyboardButton(text="Добавить", callback_data=f"add_favorite_product"),
+         types.InlineKeyboardButton(text="Съесть", callback_data=f"add_favorite_product"),
         types.InlineKeyboardButton(text="Удалить", callback_data=f"delete_favorite"),
         types.InlineKeyboardButton(text="Назад", callback_data=f"finish_search_favorite"),
     ]])

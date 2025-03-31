@@ -22,22 +22,64 @@ async def set_calorie_goal(message: types.Message, state: FSMContext):
 async def process_calorie_goal(message: types.Message, state: FSMContext):
     try:
         calorie_goal = int(message.text)
+        await state.update_data(calorie_goal=calorie_goal)
+        await message.answer("Укажите вашу цель по белкам (число в граммах):")
+        await state.set_state(SetCalorieGoal.waiting_for_proteins_goal)
+    except ValueError:
+        await message.answer("Ошибка: некорректное число.")
+        await state.clear()
+
+@router.message(SetCalorieGoal.waiting_for_proteins_goal)
+async def process_proteins_goal(message: types.Message, state: FSMContext):
+    try:
+        proteins_goal = int(message.text)
+        await state.update_data(proteins_goal=proteins_goal)
+        await message.answer("Укажите вашу цель по жирам (число в граммах):")
+        await state.set_state(SetCalorieGoal.waiting_for_fats_goal)
+    except ValueError:
+        await message.answer("Ошибка: некорректное число.")
+        await state.clear()
+
+@router.message(SetCalorieGoal.waiting_for_fats_goal)
+async def process_fats_goal(message: types.Message, state: FSMContext):
+    try:
+        fats_goal = int(message.text)
+        await state.update_data(fats_goal=fats_goal)
+        await message.answer("Укажите вашу цель по углеводам (число в граммах):")
+        await state.set_state(SetCalorieGoal.waiting_for_carbs_goal)
+    except ValueError:
+        await message.answer("Ошибка: некорректное число.")
+        await state.clear()
+
+@router.message(SetCalorieGoal.waiting_for_carbs_goal)
+async def process_carbs_goal(message: types.Message, state: FSMContext):
+    try:
+        carbs_goal = int(message.text)
+        data = await state.get_data()
 
         db = next(get_db())
         telegram_id = message.from_user.id
 
         user = db.query(User).filter_by(telegram_id=telegram_id).first()
         if not user:
-            await message.answer("Ошибка: пользователь не найден")
+            await message.answer("Ошибка: пользователь не найден.")
             await state.clear()
             return
 
-        user.calorie_goal = calorie_goal
+        user.calorie_goal = data["calorie_goal"]
+        user.proteins_goal = data["proteins_goal"]
+        user.fats_goal = data["fats_goal"]
+        user.carbs_goal = carbs_goal
         db.commit()
 
-        await message.answer(f"Ваша цель по калориям: {calorie_goal} ккал.")
+        await message.answer(
+            f"Ваши цели установлены:\n"
+            f"Калории: {user.calorie_goal} ккал\n"
+            f"Белки: {user.proteins_goal} г\n"
+            f"Жиры: {user.fats_goal} г\n"
+            f"Углеводы: {user.carbs_goal} г"
+        )
     except ValueError:
-        await message.answer("Пожалуйста, введите корректное число.")
+        await message.answer("Ошибка: некорректное число.")
     finally:
         await state.clear()
-

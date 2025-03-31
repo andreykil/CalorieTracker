@@ -11,7 +11,7 @@ router = Router()
 text_search_global = "Найти базовое блюдо"
 text_search_favorite = "Найти свое блюдо"
 text_create_favorite = "Создать свое блюдо"
-text_add_favorite_from_image = "Добавить свое блюдо по фото"
+text_add_favorite_from_image = "Съесть свое блюдо по фото"
 text_set_goal = "Изменить цель по калориям"
 
 @router.message(Command("start"))
