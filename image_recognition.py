@@ -21,4 +21,7 @@ def extract_feature_vector(file_data: bytes) -> np.ndarray:
     return feature_vector
 
 def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    dot_product = np.dot(a, b)
+    norm1 = np.linalg.norm(a)
+    norm2 = np.linalg.norm(b)
+    return dot_product / (norm1 * norm2) if norm1 > 0 and norm2 > 0 else 0
