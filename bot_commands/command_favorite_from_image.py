@@ -14,11 +14,11 @@ from utils import get_daily_stats, entry_from_favorite, text_add_favorite_from_i
 router = Router()
 
 @router.message(lambda message: message.text == text_add_favorite_from_image)
-async def handle_set_goal_button(message: types.Message, state: FSMContext):
-    await add_favorite_from_image_button(message, state)
+async def handle_favorite_from_image_button(message: types.Message, state: FSMContext):
+    await favorite_from_image_command(message, state)
 
 @router.message(Command("favorite_from_image"))
-async def add_favorite_from_image_button(message: types.Message, state: FSMContext):
+async def favorite_from_image_command(message: types.Message, state: FSMContext):
     await message.answer("Отправьте фото блюда:")
     await state.set_state(AddFavoriteFromImage.waiting_for_image)
 
