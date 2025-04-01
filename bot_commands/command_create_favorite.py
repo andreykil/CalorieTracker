@@ -11,6 +11,9 @@ from utils import favorite_product_stats, text_create_favorite
 
 router = Router()
 
+# Команда /create_favorite нужна для создания собственного блюда. Пользователю предлагается ввести название, вес,
+# КБЖУ на 100г. и отправить фотографию блюда. После чего будет создано собственное блюдо с такими характеристиками.
+
 @router.message(lambda message: message.text == text_create_favorite)
 async def handle_create_favorite_product_button(message: types.Message, state: FSMContext):
     await create_favorite_product_command(message, state)

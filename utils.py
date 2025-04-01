@@ -1,6 +1,7 @@
 from models import User, GlobalProduct, CalorieEntry, FavoriteProduct
 from datetime import datetime, timedelta
 
+# Текст для кнопок Reply-клавиатуры
 text_search_global = "Найти базовое блюдо"
 text_search_favorite = "Найти свое блюдо"
 text_create_favorite = "Создать свое блюдо"
@@ -8,6 +9,7 @@ text_add_favorite_from_image = "Съесть свое блюдо по фото"
 text_set_goal = "Изменить цель по калориям"
 text_daily_stats = "Статистика за день"
 
+# Функция получения характеристик собственного блюда
 def favorite_product_stats(product : FavoriteProduct):
     stats = (
         f"Вес: {product.quantity:.0f}г\n"
@@ -18,6 +20,7 @@ def favorite_product_stats(product : FavoriteProduct):
     )
     return stats
 
+# Функция получения характеристик базового блюда
 def global_product_stats(product : GlobalProduct):
     stats = (
         f"Калории: {product.calories:.0f}\n"
@@ -27,6 +30,7 @@ def global_product_stats(product : GlobalProduct):
     )
     return stats
 
+# Функция для получения статистики питания за указанную дату
 def get_daily_stats(user, target_date):
     start_of_day = datetime(target_date.year, target_date.month, target_date.day)
     end_of_day = start_of_day + timedelta(days=1)
@@ -78,6 +82,7 @@ def get_daily_stats(user, target_date):
     )
     return stats
 
+# Функция создания записи о съедении базового блюда
 def entry_from_global(product: GlobalProduct, user: User, quantity):
     entry = CalorieEntry(
         user_id=user.id,
@@ -90,6 +95,7 @@ def entry_from_global(product: GlobalProduct, user: User, quantity):
     )
     return entry
 
+# Функция создания записи о съедении собственного блюда
 def entry_from_favorite(product: FavoriteProduct, user: User):
     entry = CalorieEntry(
         user_id=user.id,

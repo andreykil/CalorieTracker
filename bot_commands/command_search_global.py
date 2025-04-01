@@ -11,6 +11,10 @@ from bot_commands.command_create_favorite import image_request
 
 router = Router()
 
+# Команда /search_global нужна для поиска базового блюда по названию. Пользователь вводит часть названия блюда,
+# затем бот выводит базовые блюда, в названии которых есть введенная строка, в виде inline-клавиатуры.
+# Пользователь может "съесть" блюдо, указав вес, либо добавить его в собственный список, указав название и вес порции.
+
 @router.message(lambda message: message.text == text_search_global)
 async def handle_search_global_button(message: types.Message, state: FSMContext):
     await search_global_product_command(message, state)
@@ -39,14 +43,11 @@ async def process_global_product_search(message: types.Message, state: FSMContex
         await state.clear()
         return
 
-    products = products[:10]
+    products = products[:5]
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=products[i].name, callback_data=f"global_product_{products[i].id}"),
-         types.InlineKeyboardButton(text=products[i+1].name, callback_data=f"global_product_{products[i+1].id}")]
-        if i + 1 < len(products) else
         [types.InlineKeyboardButton(text=products[i].name, callback_data=f"global_product_{products[i].id}")]
-        for i in range(0, len(products), 2)
+        for i in range(0, len(products))
     ])
 
     await message.answer("Найдены следующие блюда:", reply_markup=keyboard)

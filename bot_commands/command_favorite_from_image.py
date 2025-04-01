@@ -13,6 +13,10 @@ from utils import get_daily_stats, entry_from_favorite, text_add_favorite_from_i
 
 router = Router()
 
+# Команда /favorite_from_image нужна для добавления продукта по фото. Пользователь отправляет фотографию, после чего
+# бот извлекает ее вектор признаков, сравнивает его с собственными блюдами пользователя и находит наиболее схожее блюдо.
+# Если сходство превысило заданный порог, то блюдо добавляется в съеденные.
+
 @router.message(lambda message: message.text == text_add_favorite_from_image)
 async def handle_favorite_from_image_button(message: types.Message, state: FSMContext):
     await favorite_from_image_command(message, state)
@@ -76,8 +80,8 @@ async def process_image(message: types.Message, state: FSMContext, bot: Bot):
             await message.answer("Не удалось найти похожее среди ваших блюд.")
 
         # debug info
-        if best_match:
-            await message.answer(f"Сходство: {max_similarity:.2f}\nМинимальный порог: {similarity_limit}")
+        # if best_match:
+        # await message.answer(f"Сходство: {max_similarity:.2f}\nМинимальный порог: {similarity_limit}")
 
         await state.clear()
 

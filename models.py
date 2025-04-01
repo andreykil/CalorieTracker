@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+# Модель пользователя бота
 class User(Base):
     __tablename__ = 'users'
 
@@ -24,7 +25,7 @@ class User(Base):
     def __repr__(self):
         return f"<User(telegram_id={self.telegram_id})>"
 
-
+# Модель продукта из общего списка
 class GlobalProduct(Base):
     __tablename__ = 'global_products'
 
@@ -41,6 +42,7 @@ class GlobalProduct(Base):
     def __repr__(self):
         return f"<GlobalProduct(name={self.name})>"
 
+# Модель собственного продукта пользователя
 class FavoriteProduct(Base):
     __tablename__ = 'favorite_products'
 
@@ -62,6 +64,7 @@ class FavoriteProduct(Base):
     def __repr__(self):
         return f"<FavoriteProduct(user_id={self.user_id}, name={self.name or self.global_product.name})>"
 
+# Модель записи о съеденном продукте
 class CalorieEntry(Base):
     __tablename__ = 'calorie_entries'
 

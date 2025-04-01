@@ -10,6 +10,9 @@ from utils import get_daily_stats, text_daily_stats
 
 router = Router()
 
+# Команда /daily_stats выводит статистику питания за указанную дату. Бот просит пользователя ввести дату
+# в формате DD.MM.YYYY, после чего выводит статистику пользователя за этот день.
+
 @router.message(lambda message: message.text == text_daily_stats)
 async def handle_set_goal_button(message: types.Message, state: FSMContext):
     await daily_stats_command(message, state)

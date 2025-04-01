@@ -27,5 +27,6 @@ dp.include_router(router_create_favorite)
 dp.include_router(router_favorite_from_image)
 dp.include_router(router_daily_stats)
 
+# Запуск бота
 if __name__ == "__main__":
     dp.run_polling(bot)

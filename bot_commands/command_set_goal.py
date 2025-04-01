@@ -9,6 +9,10 @@ from utils import text_set_goal
 
 router = Router()
 
+# Команда /set_goal нужна для изменения цели по КБЖУ. Пользователю предлагается ввести цель по калориям, белкам, жирам и
+# углеводам. Указанные значения вносятся в БД, и при "съедении" блюд в дальнейшем пользователю будет выведены его
+# текущие показатели питания за день по сравнению с целью калорий.
+
 @router.message(lambda message: message.text == text_set_goal)
 async def handle_set_goal_button(message: types.Message, state: FSMContext):
     await set_goal_command(message, state)

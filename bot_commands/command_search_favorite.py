@@ -10,6 +10,10 @@ from utils import favorite_product_stats, get_daily_stats, entry_from_favorite, 
 
 router = Router()
 
+# Команда /search_favorite нужна для поиска собственного блюда по названию. Пользователь вводит часть названия блюда,
+# затем бот выводит собственные блюда, в названии которых есть введенная строка, в виде inline-клавиатуры.
+# Пользователь выбирает блюдо, после чего может "съесть" его, либо удалить из списка.
+
 @router.message(lambda message: message.text == text_search_favorite)
 async def handle_search_favorite_button(message: types.Message, state: FSMContext):
     await start_search_favorite_product_command(message, state)
@@ -31,6 +35,7 @@ async def process_search_favorite_product(message: types.Message, state: FSMCont
         search_query = ''
     db = next(get_db())
     products = db.query(FavoriteProduct).filter(FavoriteProduct.name.ilike(f"%{search_query}%")).all()
+    products = products[:5]
 
     if not products:
         await message.answer("Ваши блюда не найдены. Попробуйте другой запрос.")
@@ -38,11 +43,8 @@ async def process_search_favorite_product(message: types.Message, state: FSMCont
         return
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text=products[i].name, callback_data=f"favorite_product_{products[i].id}"),
-         types.InlineKeyboardButton(text=products[i+1].name, callback_data=f"favorite_product_{products[i+1].id}")]
-        if i + 1 < len(products) else
         [types.InlineKeyboardButton(text=products[i].name, callback_data=f"favorite_product_{products[i].id}")]
-        for i in range(0, len(products), 2)
+        for i in range(0, len(products))
     ])
 
     await message.answer("Найдены следующие ваши блюда:", reply_markup=keyboard)

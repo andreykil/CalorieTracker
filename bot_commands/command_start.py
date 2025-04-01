@@ -17,6 +17,10 @@ from utils import (
 
 router = Router()
 
+# Команда /start нужна для начала работы с ботом. Если пользователь не зарегистрирован, он вносится в таблицу users,
+# также в чат выводится краткая инструкция и создается Reply-клавиатура с командами бота. Если пользователь еще не
+# указывал цель по КБЖУ, бот просит его это сделать.
+
 @router.message(Command("start"))
 async def start_command(message: types.Message, state: FSMContext):
     keyboard = ReplyKeyboardMarkup(

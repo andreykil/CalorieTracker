@@ -8,11 +8,13 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 from tensorflow.keras.applications.resnet50 import preprocess_input
 import json
 
+# Определение модели для распознавания изображений
 base_model = ResNet50(weights='imagenet', include_top=False)
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 feature_model = Model(inputs=base_model.input, outputs=x)
 
+# Функция извлечения вектора признаков
 def extract_feature_vector(file_data: bytes) -> np.ndarray:
     img = load_img(BytesIO(file_data), target_size=(224, 224))
     img_array = img_to_array(img)
@@ -20,6 +22,7 @@ def extract_feature_vector(file_data: bytes) -> np.ndarray:
     feature_vector = feature_model.predict(img_array)[0]
     return feature_vector
 
+# Функция для подсчета косинусного сходства между векторами признаков
 def cosine_similarity(a, b):
     dot_product = np.dot(a, b)
     norm1 = np.linalg.norm(a)
