@@ -77,7 +77,7 @@ async def process_image(message: types.Message, state: FSMContext, bot: Bot):
 
         # debug info
         if best_match:
-            await message.answer(f"Similarity: {max_similarity}\nSimilarity limit: {similarity_limit}")
+            await message.answer(f"Сходство: {max_similarity:.2f}\nМинимальный порог: {similarity_limit}")
 
         await state.clear()
 
